@@ -69,6 +69,7 @@ uint8_t SensorManager_AddSensor(
     // 开启突发模式
     MLX90393_startBurst(&sensor->handle, i2c_id, g_sensorManager.flags);
     
+		
     // 先读一次数据，为后续转换预热(过滤异常)
     MLX90393_readMeasurement(&sensor->handle, i2c_id, g_sensorManager.flags, &sensor->raw);
     
@@ -174,36 +175,36 @@ void SensorManager_ReadAll(void)
         Sensor_t* sensor = &g_sensorManager.sensors[i];
         
         // 读取原始测量值
-        MLX90393_readMeasurement(&sensor->handle, sensor->i2c_id, g_sensorManager.flags, &sensor->raw);
-        
+        uint8_t status = MLX90393_readMeasurement(&sensor->handle, sensor->i2c_id, g_sensorManager.flags, &sensor->raw);
+				//Serial_Printf("measure status%02X\r\n",status);
         // 转换为物理量
         sensor->data = MLX90393_convertRaw(sensor->raw);//将ADC值转换为物理量（磁感应强度）
         
-        // // 计算磁场变化量
-        // sensor->delta.x = sensor->data.x - sensor->cal.x;
-        // sensor->delta.y = sensor->data.y - sensor->cal.y;
-        // sensor->delta.z = sensor->data.z - sensor->cal.z;
+        // 计算磁场变化量
+        sensor->delta.x = sensor->data.x - sensor->cal.x;
+        sensor->delta.y = sensor->data.y - sensor->cal.y;
+        sensor->delta.z = sensor->data.z - sensor->cal.z;
         
-        // // 非线性映射及死区过滤
-        // sensor->force = mapAndFilterMagneticForce(
-        //     sensor->delta, 
-        //     sensor->kx, sensor->ky, sensor->kz,
-        //     sensor->deadBandX, sensor->deadBandY, sensor->deadBandZ
-        // );
+        // 非线性映射及死区过滤
+        sensor->force = mapAndFilterMagneticForce(
+            sensor->delta, 
+            sensor->kx, sensor->ky, sensor->kz,
+            sensor->deadBandX, sensor->deadBandY, sensor->deadBandZ
+        );
         
-        // // 指数平滑滤波
-        // MLX90393_Data tempSmooth = smoothForceValue(
-        //     sensor->smoothForce, //pre
-        //     sensor->force,       //current
-        //     sensor->smoothingFactor
-        // );
+        // 指数平滑滤波
+        MLX90393_Data tempSmooth = smoothForceValue(
+            sensor->smoothForce, //pre
+            sensor->force,       //current
+            sensor->smoothingFactor
+        );
         
-        // // 静态阈值滤波，消除微小波动
-        // sensor->smoothForce = stabilityFilter(
-        //     sensor->smoothForce,
-        //     tempSmooth,
-        //     sensor->stabilityThreshold
-        // );
+        // 静态阈值滤波，消除微小波动
+        sensor->smoothForce = stabilityFilter(
+            sensor->smoothForce,
+            tempSmooth,
+            sensor->stabilityThreshold
+        );
     }
 }
 
@@ -232,5 +233,15 @@ void SensorManager_PrintRawData(void)
         Sensor_t* sensor = &g_sensorManager.sensors[i];
         Serial_Printf("sensor%d: %.4f, %.4f, %.4f\r\n", 
                      i+1, sensor->data.x, sensor->data.y, sensor->data.z);
+    }
+}
+
+// 打印所有传感器的数值变化
+void SensorManager_PrintdeltaData(void)
+{
+    for (uint8_t i = 0; i < g_sensorManager.count; i++) {
+        Sensor_t* sensor = &g_sensorManager.sensors[i];
+        Serial_Printf("sensor%d: %.4f, %.4f, %.4f\r\n", 
+                     i+1, sensor->delta.x, sensor->delta.y, sensor->delta.z);
     }
 }

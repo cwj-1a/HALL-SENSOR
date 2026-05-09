@@ -72,4 +72,6 @@ void SensorManager_PrintAll(void);
 // 打印所有传感器的原始测量值（滤波前数值）
 void SensorManager_PrintRawData(void);
 
+// 打印所有传感器的数值变化
+void SensorManager_PrintdeltaData(void);
 #endif // SENSOR_MANAGER_H

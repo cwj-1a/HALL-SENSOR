@@ -4,6 +4,7 @@
 #include "Serial.h"
 #include "Timer.h"
 
+
 //———————————————————————————————————————————————
 // 初始化函数：根据 A1、A0 设置 I2C 地址，DRDY_pin 传入 -1 表示不使用
 //———————————————————————————————————————————————
@@ -15,13 +16,12 @@ void MLX90393_begin(uint8_t addr,MLX90393_Handle *handle, uint8_t A1, uint8_t A0
         handle->I2C_Address = addr | ((A1 ? 2 : 0) | (A0 ? 1 : 0));
         handle->DRDY_pin = DRDY_pin;
     }
-    // 修改1.（根据芯片手册）最好加一个MLX90393_reset(handle, id);并且Delay_ms(1);
+    // 修改1.（根据芯片手册）最好加一个MLX90393_reset(handle, id);并且Delay_ms(1);可以解决命令执行失败的问题，状态位06 02 02 02 02 02 00
     uint8_t status0 = MLX90393_exitBurst(handle,id);
     mydelay_ms(1);
     uint8_t status1 = MLX90393_reset(handle, id);
 
-    mydelay_ms(1.5);
-
+    mydelay_ms(2);
     // 配置各参数：设置增益、分辨率、过采样、数字滤波和温度补偿
     MLX90393_exitBurst(handle,id);
     uint8_t status2 = MLX90393_setGainSel(handle, id, 7);
@@ -30,8 +30,8 @@ void MLX90393_begin(uint8_t addr,MLX90393_Handle *handle, uint8_t A1, uint8_t A0
     uint8_t status5 = MLX90393_setDigitalFiltering(handle, id, 7);
     uint8_t status6 = MLX90393_setTemperatureCompensation(handle, id, 0);
 
-    Serial_Printf("Init statuses: %02X %02X %02X %02X %02X %02X\r\n",
-                    status1, status2, status3, status4, status5, status6);
+    Serial_Printf("Init statuses: %02X %02X %02X %02X %02X %02X %02X\r\n",
+                    status0,status1, status2, status3, status4, status5, status6);
 }
 
 //———————————————————————————————————————————————
@@ -290,4 +290,12 @@ uint8_t MLX90393_exitBurst(MLX90393_Handle *handle, uint8_t i2c_id)
 {
     // 发送退出突发模式的命令，CMD_EXIT 定义为 0x80
     return MLX90393_sendCommand(handle, i2c_id, MLX90393_CMD_EXIT);
+}
+
+//单次读取传感器数据
+uint8_t MLX90393_StartSingleMeasurement(MLX90393_Handle *handle, uint8_t i2c_id, uint8_t flags)
+{
+    // 单次测量指定的X,Y,Z,T的数据
+    uint8_t cmd = MLX90393_CMD_START_MEASUREMENT | (flags & 0x0F);
+    return MLX90393_sendCommand(handle, i2c_id, cmd);
 }

@@ -19,6 +19,7 @@
 #define MLX90393_CMD_MEMORY_STORE      0xE0
 #define MLX90393_CMD_RESET             0xF0
 
+
 // 测量标志（低4位控制温度T及 X、Y、Z 轴）
 #define MLX90393_FLAG_T  0x01
 #define MLX90393_FLAG_X  0x02

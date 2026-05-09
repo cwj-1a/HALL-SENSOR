@@ -17,7 +17,8 @@ void TIM2_Init(void)
     TIM_TimeBaseStructure.TIM_Prescaler = 71;
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-
+		TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+	
     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 
     // 3. 允许更新中断
